@@ -18,6 +18,8 @@ After running above command you will get inplace changes in your directory as we
 
 + mr_log.txt =  (timestamp, filepath,changed property) for mr to tez property change.
 
++ location_log = (timestamp, filepath, tablename, category) for location clause deletion from managed transactional table queries.
+
 
 
 Note: For running source code AutoScriptModifier is the main object.

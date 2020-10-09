@@ -57,7 +57,7 @@ object ScriptChangeHandler {
 
 
 
-  def processFile(filePath:String, logFile:LogHandler,changeLogfile:LogHandler,likeLogFile:LogHandler,ctasLogFile:LogHandler):Unit={
+  def processFile(filePath:String, logFile:LogHandler,changeLogfile:LogHandler,likeLogFile:LogHandler,ctasLogFile:LogHandler,locationLogFile:LogHandler):Unit={
 
     logger.info("Received file at "+filePath+" for processing.")
     putQueriesToNewLine(filePath)
@@ -66,7 +66,7 @@ object ScriptChangeHandler {
     val tempFile=new File("temp.txt")
     val writer = new PrintWriter(tempFile)
     val reader=Source.fromFile(filePath)
-    QueryExtractorAndChangeHandler.extractQuery(reader,writer,logFile,changeLogfile,likeLogFile,ctasLogFile,filePath)
+    QueryExtractorAndChangeHandler.extractQuery(reader,writer,logFile,changeLogfile,likeLogFile,ctasLogFile,locationLogFile,filePath)
     reader.close()
     writer.close()
     val path=moveAndRenameFile(tempFile.getCanonicalPath,originalFile.getCanonicalPath)

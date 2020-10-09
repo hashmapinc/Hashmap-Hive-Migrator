@@ -46,7 +46,13 @@ object QueryModifier {
       newQuery
     }
     else{
-      query
+      if(query.replaceAll("""\s""","").matches(""".*(?i)LOCATION\s*('.*?'|".*?")\s*.*""")){
+        "--Hashmap : Location clause removed from query mentioned below "+Calendar.getInstance().getTime+"\n"+query.replaceAll("""(?i)LOCATION\s*('.*?'|".*?")\s*""","")
+      }
+      else{
+        query.replaceAll("""(?i)LOCATION\s*('.*?'|".*?")\s*""","")
+      }
+      //query
     }
   }
 
