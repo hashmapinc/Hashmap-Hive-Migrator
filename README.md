@@ -1,4 +1,4 @@
-# AutoScriptModifier
+# Hashmap Hive Migrator
 
 1. You should have java installed on system.
 2. Create jar from project.
