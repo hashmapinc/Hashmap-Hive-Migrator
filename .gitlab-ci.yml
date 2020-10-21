@@ -33,8 +33,7 @@ cache:
   stage: test
   script:
     - 'mvn $MAVEN_CLI_OPTS test'
-  except:
-    - master
+  
 
 # Verify merge requests using JDK8
 Unit tests:
