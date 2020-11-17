@@ -16,6 +16,7 @@
 import java.io.PrintWriter
 import java.util.Calendar
 import java.util.logging.Logger
+import java.util.regex.Matcher
 
 import sun.rmi.log.ReliableLog.LogFile
 
@@ -24,14 +25,18 @@ import scala.io.{BufferedSource, Source}
 object QueryExtractorAndChangeHandler {
   private val logger=Logger.getLogger(QueryExtractorAndChangeHandler.getClass.getName)
   //extract ddl Queries
-  def extractQuery(reader:BufferedSource,writer:PrintWriter,logFile: LogHandler,changeLogFile:LogHandler,likeLogFile:LogHandler,ctasLogHandler:LogHandler,locationLogFile:LogHandler,filePath:String): Unit ={
+  def extractQuery(reader:BufferedSource,writer:PrintWriter,logFile: LogHandler,changeLogFile:LogHandler,likeLogFile:LogHandler,ctasLogHandler:LogHandler,locationLogFile:LogHandler,filePath:String,clusterNames:List[String]): Unit ={
     //to create exception list of all table name which later on were changed to transactional
     ExceptionList.putToExceptionList(reader)
+    val reader1=Source.fromFile(filePath)
+    ExceptionList.putToAlterDatabaseList(reader1)
+    reader1.close()
     var queryCompletionInProgress=false
     var alterQueryCompletionInProgress=false
+    var dbQueryCompletionInProgress=false
     var query=""
-    val reader1=Source.fromFile(filePath)
-    for (line <- reader1.getLines) {
+    val reader2=Source.fromFile(filePath)
+    for (line <- reader2.getLines) {
       if(line.startsWith("//") || line.startsWith("--")){//if line is comment write as it is
         writer.println(line)
       }
@@ -74,12 +79,55 @@ object QueryExtractorAndChangeHandler {
           alterQueryCompletionInProgress=true
         }
       }
+      else if(line.toLowerCase.matches("(\t| *)(create|alter) *database.*") ||dbQueryCompletionInProgress==true){
+        if(line.contains(";")){
+          query+="\n"+line
+          dbQueryCompletionInProgress=false
+          if(query.toLowerCase.replaceAll("""\s"""," ").matches(""".* location .*""") && !(ExceptionList.isPresentInAlteredDbList(TableNameExtractor.getTableName(query,3)))){
+            var loc=""
+            val words:Array[String]=query.split("""\s""")
+            val locValIndex= words.map(word=>word.toLowerCase).toList.indexOf("location")+1
+            val locValue=words(locValIndex).replaceAll("""("|'|;)""","").trim
+            val dirs=locValue.split("""(/|//|///)""")
+
+            if(dirs(0).toLowerCase=="hdfs:"){
+              if(dirs.length>=3){
+                if(clusterNames.contains(dirs(2))) {
+                  loc=locValue.replaceAll(dirs(0)+"//"+dirs(2),Matcher.quoteReplacement("\\${hivevar:nameNode}"))
+                } else{
+                  loc=locValue.replaceAll("hdfs://",Matcher.quoteReplacement("\\${hivevar:nameNode}"))
+                }
+              }
+              else{
+                loc=locValue.replaceAll("hdfs://",Matcher.quoteReplacement("\\${hivevar:nameNode}"))
+              }
+            }
+            else{
+              loc="\\${hivevar:nameNode}"+locValue
+            }
+
+            writer.println("\n--Hashmap : Location value "+locValue+" is changed to "+loc.substring(1))
+            writer.println(query.replaceAll("""(?i)LOCATION\s*('.*?'|".*?")\s*""","LOCATION '"+loc+"' ").trim)
+            writer.println("--Hashmap : Alter statement is added to set managedlocation property for database")
+            writer.println("ALTER DATABASE "+TableNameExtractor.getTableName(query,3)+" SET managedlocation '"+loc.substring(1)+"' ;")
+
+          }
+          else{
+            writer.println(query)
+          }
+          query=""
+        }
+        else{
+          query+="\n"+line
+          dbQueryCompletionInProgress=true
+        }
+      }
       else{
         writer.println(line)
       }
     }
 
-    reader1.close
+    reader2.close
 
   }
 

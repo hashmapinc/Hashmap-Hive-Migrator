@@ -20,6 +20,7 @@ object TableNameExtractor {
     category match {
       case 1=>getTableNameFromCreateDDL(query)
       case 2=>getTableNameFromAlterDDL(query)
+      case 3=>getDatabaseNameFromDDL(query)
     }
   }
 
@@ -39,7 +40,16 @@ object TableNameExtractor {
     val words=query.split("\n|\t|  *").toList
     filterTableName(words(2)) //alter table <table_name>
   }
-
+  private def getDatabaseNameFromDDL(query: String)={
+    var index:Int= -1
+    val words:List[String]=query.replaceAll("""\s"""," ").trim.split(""" +|\[""").toList
+    if(words.length>=5 && ((words(0)+" "+words(1)+" "+words(2)+" "+words(3)+" "+words(4)).toLowerCase=="create database if not exists")){
+      words(5)
+    }
+    else{
+      words(2)
+    }
+  }
   private def filterTableName(tableName:String):String={
     val arr:List[String]=tableName.split("\\(").toList
     var tbName=""

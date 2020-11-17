@@ -31,11 +31,16 @@ object ScriptChangeHandler {
     path.toString
   }
 
-  private def putQueriesToNewLine(filePath: String)={
+  private def putQueriesToNewLineAndSemicolonAtEnd(filePath: String)={
     val originalFile=new File(filePath)
     val tempFile=new File("temp1.txt")
     val writer = new PrintWriter(tempFile)
+    val reader1=Source.fromFile(filePath)
+    val lastLineNum=reader1.getLines().length
+    reader1.close()
+
     val reader=Source.fromFile(filePath)
+    var counter=1
     for(line<-reader.getLines()){
       if(line.matches(""".*[^\\];[^"]*""")){
         val lineparts=line.split("""[^\\];""").toList
@@ -63,6 +68,14 @@ object ScriptChangeHandler {
       else{
         writer.println(line)
       }
+      if (counter==lastLineNum){
+        if(line.trim.startsWith("--") || line.trim.endsWith(";")){}
+        else
+        writer.println(";")
+      }
+      else{
+        counter=counter+1;
+      }
     }
     reader.close()
     writer.close()
@@ -72,16 +85,16 @@ object ScriptChangeHandler {
 
 
 
-  def processFile(filePath:String, logFile:LogHandler,changeLogfile:LogHandler,likeLogFile:LogHandler,ctasLogFile:LogHandler,locationLogFile:LogHandler):Unit={
+  def processFile(filePath:String, logFile:LogHandler,changeLogfile:LogHandler,likeLogFile:LogHandler,ctasLogFile:LogHandler,locationLogFile:LogHandler,clusterNames:List[String]):Unit={
 
     logger.info("Received file at "+filePath+" for processing.")
-    putQueriesToNewLine(filePath)
+    putQueriesToNewLineAndSemicolonAtEnd(filePath)
 
     val originalFile=new File(filePath)
     val tempFile=new File("temp.txt")
     val writer = new PrintWriter(tempFile)
     val reader=Source.fromFile(filePath)
-    QueryExtractorAndChangeHandler.extractQuery(reader,writer,logFile,changeLogfile,likeLogFile,ctasLogFile,locationLogFile,filePath)
+    QueryExtractorAndChangeHandler.extractQuery(reader,writer,logFile,changeLogfile,likeLogFile,ctasLogFile,locationLogFile,filePath,clusterNames)
     reader.close()
     writer.close()
     val path=moveAndRenameFile(tempFile.getCanonicalPath,originalFile.getCanonicalPath)

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.util.logging.Logger
 
 object AutoScriptModifier{
@@ -24,7 +23,13 @@ object AutoScriptModifier{
 
     val repoPath=args(0)
     val logDirPath=args(1)
+    var i:Int=0
+    var clusterNames:List[String]= List.empty
+    for (i<-2 to args.length-1){
 
+
+        clusterNames=clusterNames:+args(i)
+    }
     val logFilePath=logDirPath+"\\log.txt"
     val propertyChangeLogFilePath=logDirPath+"\\mr_log.txt"
     val likeLogFilePath=logDirPath+"\\like_log.txt"
@@ -48,7 +53,7 @@ object AutoScriptModifier{
     logger.info("location log file set")
 
     logger.info("Sending files for processing\n")
-    listOfAllFilePath.map(filePath=>ScriptChangeHandler.processFile(filePath,logFile,changeLogFile,likeLogFile,ctasLogFile,locationLogFile))
+    listOfAllFilePath.map(filePath=>ScriptChangeHandler.processFile(filePath,logFile,changeLogFile,likeLogFile,ctasLogFile,locationLogFile,clusterNames))
 
 
   }
